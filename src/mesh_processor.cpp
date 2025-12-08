@@ -51,8 +51,12 @@ bool compress_to_ktx2(const std::vector<unsigned char>& rgba_data, int width, in
         // - cFlagKTX2: output KTX2 format
         // - cFlagGenMipsWrap: generate mipmaps with wrapping
         unsigned int compression_flags = 128 | basisu::cFlagKTX2 | basisu::cFlagGenMipsWrap;
+		
+		// 核心：指定ETC1S格式（匹配你的压缩目标）
+		basist::basis_tex_format compress_mode = basist::basis_tex_format::cETC1S;
 
         void* compressed_data = basisu::basis_compress(
+			compress_mode,
             source_images,
             compression_flags,
             1.0f,

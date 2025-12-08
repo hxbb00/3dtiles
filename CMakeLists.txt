@@ -108,4 +108,9 @@ target_link_libraries(_3dtile PRIVATE meshoptimizer::meshoptimizer)
 find_package(unofficial-sqlite3 CONFIG REQUIRED)
 target_link_libraries(_3dtile PRIVATE unofficial::sqlite3::sqlite3)
 
+# 查找zstd库
+find_package(zstd CONFIG REQUIRED)
+# 链接zstd
+target_link_libraries(_3dtile PRIVATE zstd::libzstd)
+
 install(TARGETS _3dtile DESTINATION lib)

@@ -27,23 +27,20 @@ fn build_win_msvc() {
     // for FFI C++ static library
     println!("cargo:rustc-link-lib=static=_3dtile");
 
-    // Link Search Path for Draco library
-    let source_dir = env::var("CARGO_MANIFEST_DIR").expect("CARGO_MANIFEST_DIR environment variable is not set");
-    // Link Search Path for Draco library
-    println!("cargo:rustc-link-search=native={}/thirdparty/draco", Path::new(&source_dir).display());
-    println!("cargo:rustc-link-lib=static=draco");
-
     let out_dir = env::var("OUT_DIR").unwrap();
     println!("cargo:warning=out_dir = {}", &out_dir);
     print_vcpkg_tree(Path::new(&out_dir)).unwrap();
     // vcpkg_installed path
-    let vcpkg_installed_dir = Path::new(&out_dir)
-        .join("build")
-        .join("vcpkg_installed")
+    let vcpkg_installed_dir = Path::new(&vcpkg_root)
+        .join("installed")
         .join("x64-windows");
+	
+    // Link Search Path for Draco library
+    println!("cargo:rustc-link-search=native={}/lib", vcpkg_installed_dir.display());
+    println!("cargo:rustc-link-lib=draco");
 
     // Link Search Path for third party library
-    let vcpkg_installed_lib_dir = vcpkg_installed_dir.join("lib");
+    let vcpkg_installed_lib_dir = vcpkg_installed_dir.join("plugins");
     println!("cargo:rustc-link-search=native={}", vcpkg_installed_lib_dir.display());
 
     // 1. FFI static
@@ -66,6 +63,8 @@ fn build_win_msvc() {
 
     // 5. sqlite
     println!("cargo:rustc-link-lib=sqlite3");
+    
+    println!("cargo:rustc-link-lib=zstd");
 
     // copy gdal and proj data
     let vcpkg_share_dir = vcpkg_installed_dir.join("share");

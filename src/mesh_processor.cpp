@@ -17,7 +17,7 @@
 #include "draco/core/encoder_buffer.h"
 #include "draco/mesh/mesh.h"
 
-#include "stb_image_write.h"
+#include <stb_image_write.h>
 
 // KTX2 compression flag
 static bool b_use_ktx2_compression = true;
@@ -50,15 +50,15 @@ bool compress_to_ktx2(const std::vector<unsigned char>& rgba_data, int width, in
         // - Quality 128 (0-255): compression quality
         // - cFlagKTX2: output KTX2 format
         // - cFlagGenMipsWrap: generate mipmaps with wrapping
-        unsigned int compression_flags = 128 | basisu::cFlagKTX2 | basisu::cFlagGenMipsWrap;
+        unsigned int compression_flags = 64 | basisu::cFlagKTX2 | basisu::cFlagGenMipsWrap;
 		
-		// ºËÐÄ£ºÖ¸¶¨ETC1S¸ñÊ½£¨Æ¥ÅäÄãµÄÑ¹ËõÄ¿±ê£©
+		// ï¿½ï¿½Ä£ï¿½Ö¸ï¿½ï¿½ETC1Sï¿½ï¿½ï¿½ï¿½ï¿½Æ¥ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ä¿ï¿½ê£©
 		basist::basis_tex_format compress_mode = basist::basis_tex_format::cETC1S;
 
         void* compressed_data = basisu::basis_compress(
-			compress_mode,
+            basist::basis_tex_format::cUASTC4x4,
             source_images,
-            compression_flags,
+            static_cast<uint32_t>(compression_flags),
             1.0f,
             &compressed_size
         );
@@ -73,7 +73,7 @@ bool compress_to_ktx2(const std::vector<unsigned char>& rgba_data, int width, in
         memcpy(ktx2_data.data(), compressed_data, compressed_size);
 
         // Free the compressed data
-        free(compressed_data);
+        basisu::basis_free_data(compressed_data);
 
         return true;
     } catch (const std::exception& e) {
@@ -621,7 +621,8 @@ bool simplify_mesh_geometry(osg::Geometry* geometry, const SimplificationParams&
 
 // Function to compress mesh geometry using Draco
 bool compress_mesh_geometry(osg::Geometry* geometry, const DracoCompressionParams& params,
-                           std::vector<unsigned char>& compressed_data, size_t& compressed_size) {
+                           std::vector<unsigned char>& compressed_data, size_t& compressed_size,
+                           int* out_position_att_id, int* out_normal_att_id) {
     if (!params.enable_compression || !geometry) {
         return false;
     }
@@ -653,10 +654,11 @@ bool compress_mesh_geometry(osg::Geometry* geometry, const DracoCompressionParam
 
     // Handle normals if present
     osg::Vec3Array* normalArray = dynamic_cast<osg::Vec3Array*>(geometry->getNormalArray());
+    int normalAttId = -1;
     if (normalArray && normalArray->size() == vertexCount) {
         draco::GeometryAttribute normalAttr;
         normalAttr.Init(draco::GeometryAttribute::NORMAL, nullptr, 3, draco::DT_FLOAT32, false, sizeof(float) * 3, 0);
-        int normalAttId = dracoMesh->AddAttribute(normalAttr, true, vertexCount);
+        normalAttId = dracoMesh->AddAttribute(normalAttr, true, vertexCount);
 
         // Copy normals
         for (size_t i = 0; i < vertexCount; ++i) {
@@ -715,6 +717,13 @@ bool compress_mesh_geometry(osg::Geometry* geometry, const DracoCompressionParam
     compressed_size = buffer.size();
     compressed_data.resize(compressed_size);
     std::memcpy(compressed_data.data(), buffer.data(), compressed_size);
+
+    if (out_position_att_id) {
+        *out_position_att_id = posAttId;
+    }
+    if (out_normal_att_id) {
+        *out_normal_att_id = normalAttId;
+    }
 
     return true;
 }
